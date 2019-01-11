@@ -105,7 +105,7 @@ public class FXMLDocumentController implements Initializable {
         //Add Item Name to tempList
         String name = itemName.textProperty().getValue();
         if(!name.equals(blank)) {
-            tempList.add(name);
+            tempList.add(0,name);
             itemName.textProperty().set(blank);
         }
     }
@@ -115,7 +115,7 @@ public class FXMLDocumentController implements Initializable {
         //Add Item Name to permList
         String name = itemName.textProperty().getValue();
         if(!name.equals(blank)) {
-            permList.add(name);
+            permList.add(0,name);
             itemName.textProperty().set(blank);
         }
     }
@@ -147,8 +147,8 @@ public class FXMLDocumentController implements Initializable {
     private void setInitComboBox() {
         //Set initPicker item list to all Perm and Temp items
         ArrayList<String> temp = new ArrayList<>();
-        temp.addAll(permList);
         temp.addAll(tempList);
+        temp.addAll(permList);
         ObservableList<String> options = FXCollections.observableArrayList(temp);
         initPicker.setItems(options);
     }
