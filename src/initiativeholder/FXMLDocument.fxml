@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane id="AnchorPane" prefHeight="491.0" prefWidth="550.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="initiative.holder.FXMLDocumentController">
+<AnchorPane id="AnchorPane" prefHeight="491.0" prefWidth="550.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="initiativeholder.FXMLDocumentController">
     <children>
         <Button fx:id="nextButton" disable="true" layoutX="14.0" layoutY="294.0" onAction="#nextButtonAction" text="Next Turn" textAlignment="CENTER" />
       <VBox layoutX="14.0" layoutY="14.0" prefHeight="250.0" prefWidth="200.0">
