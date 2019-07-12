@@ -25,7 +25,7 @@ public class InitiativeHolder extends Application {
         
         scene = new Scene(root);
         
-        stage.setTitle("Initiative Tracker");
+        stage.setTitle("Initiative Tracker by Yawrf");
         stage.setScene(scene);
         stage.show();
     }

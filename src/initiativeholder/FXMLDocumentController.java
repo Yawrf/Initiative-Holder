@@ -7,7 +7,6 @@ package initiativeholder;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.ResourceBundle;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -24,80 +23,63 @@ import javafx.scene.control.TextArea;
  */
 public class FXMLDocumentController implements Initializable {
     
+    //<editor-fold>
     @FXML
     private TextArea Slot1;
-    
     @FXML
     private TextArea Slot2;
-    
     @FXML
     private TextArea Slot3;
-    
     @FXML
     private TextArea Slot4;
-    
     @FXML
     private TextArea Slot5;
-    
     @FXML
     private TextArea itemName;
-    
     @FXML
     private TextArea initValue;
-    
     @FXML
     private Button nextButton;
-    
     @FXML
     private Button addTempButton;
-    
     @FXML
     private Button addPermButton;
-    
     @FXML
     private Button removePermButton;
-    
     @FXML
     private Button initSetButton;
-    
     @FXML
     private Button readyActionButton;
-    
     @FXML
     private Button triggerButton;
-    
     @FXML
     private Button startButton;
-    
     @FXML
     private Button endButton;
-    
     @FXML
     private Button removeInitButton;
-    
-    @FXML
-    private Button addTrackButton;
-    
     @FXML
     private ComboBox initPicker;
-    
     @FXML
     private ComboBox readiedPicker;
     
-    private final ArrayList<String> permList = new ArrayList<>();
-    private ArrayList<String> tempList = new ArrayList<>();
-    private ArrayList<String> useList = new ArrayList<>();
-    private HashMap<String, Integer> initSorting = new HashMap<>();
-    private final ArrayList<String> readiedList = new ArrayList<>();
+//    private final ArrayList<String> permList = new ArrayList<>();
+//    private ArrayList<String> tempList = new ArrayList<>();
+//    private ArrayList<String> useList = new ArrayList<>();
+//    private HashMap<String, Integer> initSorting = new HashMap<>();
+//    private final ArrayList<String> readiedList = new ArrayList<>();
     private final String blank = "";
+    private final InitTrack track = new InitTrack();
+    private InitItem currentItem = null;
+    
+    //</editor-fold>
     
     @FXML
     private void nextButtonAction(ActionEvent event) {
         //Cycle Initiatives
-        if(useList.size() > 0) {
-            useList.add(useList.remove(0));
-            setSlots();
-        }
+        currentItem = track.getNextItem(currentItem);
+        currentItem.setReadied(false);
+        setSlots();
     }
     
     @FXML
@@ -105,7 +87,8 @@ public class FXMLDocumentController implements Initializable {
         //Add Item Name to tempList
         String name = itemName.textProperty().getValue();
         if(!name.equals(blank)) {
-            tempList.add(0,name);
+            InitItem newItem = new InitItem(name, false);
+            track.addInitItem(newItem);
             itemName.textProperty().set(blank);
         }
     }
@@ -115,7 +98,8 @@ public class FXMLDocumentController implements Initializable {
         //Add Item Name to permList
         String name = itemName.textProperty().getValue();
         if(!name.equals(blank)) {
-            permList.add(0,name);
+            InitItem newItem = new InitItem(name, true);
+            track.addInitItem(newItem);
             itemName.textProperty().set(blank);
         }
     }
@@ -124,9 +108,17 @@ public class FXMLDocumentController implements Initializable {
     private void removePermButtonAction(ActionEvent event) {
         //Remove InitPicker from permList
         String name = (String) initPicker.valueProperty().getValue();
-        if(permList.contains(name)) {
-            permList.remove(name);
-            initPicker.valueProperty().set(initPicker.promptTextProperty().getValue());
+        name = name.split(" - ")[0];
+        InitItem tempItem = null;
+        for(InitItem i : track.getTrack()) {
+            if(i.getName().equals(name)) {
+                tempItem = i;
+            }
+        }
+        if(tempItem != null) {
+            track.getTrack().remove(tempItem);
+            initPicker.setValue(initPicker.getPromptText());
+            initValue.setText(blank);
         }
     }
     
@@ -136,10 +128,19 @@ public class FXMLDocumentController implements Initializable {
         String name = (String)initPicker.valueProperty().getValue();
         String initTemp = initValue.textProperty().getValue();
         Integer init = Integer.valueOf(initTemp);
-        if(!name.equals(blank) && !name.equals(initPicker.promptTextProperty().getValue())) {
-            initSorting.put(name, init);
+        name = name.split(" - ")[0];
+        InitItem tempItem = null;
+        for(InitItem i : track.getTrack()) {
+            if(i.getName().equals(name)) {
+                tempItem = i;
+            }
+        }
+        if(tempItem != null) {
+            tempItem.setInit(init);
+            tempItem.setInUse(true);
             initPicker.valueProperty().set(initPicker.promptTextProperty().getValue());
             initValue.textProperty().set(blank);
+            setSlots();
         }
     }
     
@@ -147,8 +148,9 @@ public class FXMLDocumentController implements Initializable {
     private void setInitComboBox() {
         //Set initPicker item list to all Perm and Temp items
         ArrayList<String> temp = new ArrayList<>();
-        temp.addAll(tempList);
-        temp.addAll(permList);
+        for(InitItem i : track.getNameSort()) {
+            temp.add(i.toString());
+        }
         ObservableList<String> options = FXCollections.observableArrayList(temp);
         initPicker.setItems(options);
     }
@@ -157,84 +159,78 @@ public class FXMLDocumentController implements Initializable {
     private void initPickerAction(ActionEvent event) {
         //Recall associated init, if any
         String name = (String)initPicker.valueProperty().getValue();
-        if(initSorting.containsKey(name)) {
-            initValue.textProperty().set(initSorting.get(name).toString());
+        if(name != null) {
+            name = name.split(" - ")[0];
+            InitItem tempItem = null;
+            for(InitItem i : track.getTrack()) {
+                if(i.getName().equals(name)) {
+                    tempItem = i;
+                }
+            }
+            if(tempItem != null) {
+                initValue.setText("" + tempItem.getInit());
+            }
         }
     }
     
     @FXML
     private void startButtonAction(ActionEvent event) {
-        //Sort initSorting into useList and initialize Slots
-        ArrayList<String> names = new ArrayList<>();
-        names.addAll(initSorting.keySet());
-        ArrayList<Integer> inits = new ArrayList<>();
-        inits.addAll(initSorting.values());
-        
-        ArrayList<String> sorted = new ArrayList<>();
-        while(names.size() > 0) {
-            int temp = -1;
-            int spot = 0;
-            for(int i = 0; i < names.size(); ++i) {
-                if(inits.get(i) > temp) {
-                    spot = i;
-                    temp = inits.get(i);
-                }
-            }
-            sorted.add(names.remove(spot));
-            inits.remove(spot);
-        }
-        useList = sorted;
-        
-        setSlots();
-        
         setDisabled(true);
+        currentItem = track.getInitSort().get(0);
+        setSlots();
     }
 
     @FXML
     private void endButtonAction(ActionEvent event) {
-        useList = new ArrayList<>();
-        tempList = new ArrayList<>();
-        initSorting = new HashMap<>();
-        
-        setSlots();
-        
         setDisabled(false);
+        track.endTrack();
+        currentItem = null;
+        setSlots();
     }
     
     @FXML
     private void readyActionButtonAction(ActionEvent event) {
-        readiedList.add(useList.get(0));
+        currentItem.setReadied(true);
         nextButtonAction(event);
     }
     
     @FXML 
     private void triggerButtonAction(ActionEvent event) {
         String name = (String) readiedPicker.valueProperty().getValue();
-        useList.add(0,useList.remove(useList.indexOf(name)));
-        readiedList.remove(name);
+        InitItem tempItem = null;
+        for(InitItem i : track.getReadiedTrack()) {
+            if(i.getName().equals(name)) {
+                tempItem = i;
+            }
+        }
+        if(tempItem != null) {
+            tempItem.setInit(currentItem.getInit());
+            tempItem.setReadied(false);
+            currentItem = tempItem;
+        } else {
+            System.out.println("Trigger Error - No Match");
+        }
+        
         setSlots();
         readiedPicker.valueProperty().set(readiedPicker.promptTextProperty().getValue());
     }
     
     @FXML 
     private void removeInitButtonAction(ActionEvent event) {
-        String name = Slot1.textProperty().getValue();
-        useList.remove(name);
+        currentItem = track.unUseItem(currentItem);
         setSlots();
-    }
-    
-    @FXML
-    private void addTrackButtonAction(ActionEvent event) {
-        String name = itemName.getText();
-        if(!name.equals(blank) && !name.equals(itemName.getPromptText())) {
-            useList.add(name);
-            setSlots();
+        if(!currentItem.isInUse()) {
+            endButtonAction(event);
         }
-        itemName.setText(blank);
     }
     
     @FXML
     private void setReadiedComboBox() {
+        ArrayList<String> readiedList = new ArrayList<>();
+        for(InitItem i : track.getReadiedTrack()) {
+            readiedList.add(i.getName());
+        }
+        
         ObservableList<String> options = FXCollections.observableArrayList(readiedList);
         readiedPicker.setItems(options);
     }
@@ -263,42 +259,32 @@ public class FXMLDocumentController implements Initializable {
     }
     
     private void setSlots() {
-        Slot1.textProperty().set(useList.size() > 0 ? useList.get(0) : blank);
-        Slot2.textProperty().set(useList.size() > 1 ? useList.get(1) : blank);
-        Slot3.textProperty().set(useList.size() > 2 ? useList.get(2) : blank);
-        Slot4.textProperty().set(useList.size() > 3 ? useList.get(3) : blank);
-        Slot5.textProperty().set(useList.size() > 4 ? useList.get(4) : blank);
-        
-        String name = Slot1.textProperty().getValue();
-        if(readiedList.contains(name)) {
-            readiedList.remove(name);
-        }
+        InitItem tempItem = currentItem;
+        Slot1.textProperty().set(tempItem == null ? blank : tempItem.toString());
+        tempItem = track.getNextItem(tempItem);
+        Slot2.textProperty().set(tempItem == null ? blank : tempItem.toString());
+        tempItem = track.getNextItem(tempItem);
+        Slot3.textProperty().set(tempItem == null ? blank : tempItem.toString());
+        tempItem = track.getNextItem(tempItem);
+        Slot4.textProperty().set(tempItem == null ? blank : tempItem.toString());
+        tempItem = track.getNextItem(tempItem);
+        Slot5.textProperty().set(tempItem == null ? blank : tempItem.toString());
     }
     
     private void setDisabled(boolean start) {
         startButton.setDisable(start);
         endButton.setDisable(!start);
         nextButton.setDisable(!start);
-        initSetButton.setDisable(start);
-        initPicker.setDisable(start);
-        addTempButton.setDisable(start);
-        addPermButton.setDisable(start);
         triggerButton.setDisable(!start);
         readyActionButton.setDisable(!start);
         readiedPicker.setDisable(!start);
         removePermButton.setDisable(start);
         removeInitButton.setDisable(!start);
-        addTrackButton.setDisable(!start);
     }
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         // TODO
-        for(int i = 1; i <= 10; ++i) {
-            String s = "";
-            s += i;
-            permList.add(s);
-        }
     }    
     
 }
